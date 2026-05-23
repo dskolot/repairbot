@@ -119,7 +119,7 @@ async def add_part_prompt(cb: CallbackQuery, state: FSMContext):
 @router.message(AddPart.waiting_name)
 async def part_name_entered(msg: Message, state: FSMContext):
     await state.update_data(part_name=msg.text.strip())
-    await msg.answer("💰 Введите стоимость запчасти (в рублях):")
+    await msg.answer("💰 Введите стоимость запчасти (в евро):")
     await state.set_state(AddPart.waiting_cost)
 
 
@@ -182,9 +182,9 @@ async def stats_menu(msg: Message, db_user: dict, user_role: str):
             f"📋 Всего заказов:  {stats['total']}\n"
             f"✅ Выполнено:      {stats['done']}\n"
             f"❌ Отменено:       {stats['cancelled']}\n"
-            f"💰 Выручка:        {stats['revenue']:,} ₽\n\n"
-            f"📈 Приход (касса): {cash['income']:,} ₽\n"
-            f"📉 Расход (касса): {cash['expense']:,} ₽\n"
-            f"💵 Прибыль:        {cash['profit']:,} ₽"
+            f"💰 Выручка:        {stats['revenue']:,} €\n\n"
+            f"📈 Приход (касса): {cash['income']:,} €\n"
+            f"📉 Расход (касса): {cash['expense']:,} €\n"
+            f"💵 Прибыль:        {cash['profit']:,} €"
         )
     await msg.answer(text, parse_mode="Markdown")
