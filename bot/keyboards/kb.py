@@ -7,7 +7,8 @@ def main_menu(role: str) -> ReplyKeyboardMarkup:
 
     if role in ("admin", "owner"):
         buttons.append([KeyboardButton(text="➕ Новый заказ"), KeyboardButton(text="📊 Все заказы")])
-        buttons.append([KeyboardButton(text="💰 Касса"), KeyboardButton(text="📈 Статистика")])
+        buttons.append([KeyboardButton(text="💰 Касса"), KeyboardButton(text="📤 Расходы")])
+        buttons.append([KeyboardButton(text="📈 Статистика")])
 
     if role == "master":
         buttons.append([KeyboardButton(text="➕ Новый заказ")])
@@ -15,8 +16,25 @@ def main_menu(role: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
 
+def expense_type_keyboard() -> InlineKeyboardMarkup:
+    buttons = [
+        [InlineKeyboardButton(text="👨‍🔧 Зарплата мастеру",       callback_data="exp:salary")],
+        [InlineKeyboardButton(text="👤 Зарплата администратору",  callback_data="exp:admin_salary")],
+        [InlineKeyboardButton(text="💸 Долг / аванс мастеру",    callback_data="exp:debt")],
+        [InlineKeyboardButton(text="⛽ Бензин / транспорт",      callback_data="exp:transport")],
+        [InlineKeyboardButton(text="🛠 Оборудование",            callback_data="exp:equipment")],
+        [InlineKeyboardButton(text="📦 Прочий расход",           callback_data="exp:other")],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def expense_masters_keyboard(masters: list) -> InlineKeyboardMarkup:
+    buttons = [[InlineKeyboardButton(text=m["name"], callback_data=f"exp_master:{m['id']}")]
+               for m in masters]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 def status_keyboard(order_id: str, current_status: str) -> InlineKeyboardMarkup:
-    from core.config import STATUS_ORDER
     buttons = []
     for s, label in STATUSES.items():
         if s == current_status:
@@ -28,12 +46,12 @@ def status_keyboard(order_id: str, current_status: str) -> InlineKeyboardMarkup:
 def order_actions(order_id: str, role: str) -> InlineKeyboardMarkup:
     btns = [
         [InlineKeyboardButton(text="🔄 Изменить статус", callback_data=f"change_status:{order_id}")],
-        [InlineKeyboardButton(text="🔧 Запчасти", callback_data=f"parts:{order_id}")],
+        [InlineKeyboardButton(text="🔧 Запчасти",        callback_data=f"parts:{order_id}")],
         [InlineKeyboardButton(text="💰 Добавить оплату", callback_data=f"pay:{order_id}")],
     ]
     if role in ("admin", "owner"):
         btns.append([InlineKeyboardButton(text="👤 Назначить мастера", callback_data=f"assign:{order_id}")])
-        btns.append([InlineKeyboardButton(text="✏️ Изменить цену", callback_data=f"edit_price:{order_id}")])
+        btns.append([InlineKeyboardButton(text="✏️ Изменить цену",     callback_data=f"edit_price:{order_id}")])
     return InlineKeyboardMarkup(inline_keyboard=btns)
 
 
@@ -57,9 +75,9 @@ def masters_keyboard(masters: list, prefix: str = "master") -> InlineKeyboardMar
 
 def cash_type_keyboard(order_id: str) -> InlineKeyboardMarkup:
     buttons = [
-        [InlineKeyboardButton(text="💰 Полная оплата",  callback_data=f"cash:payment_in:{order_id}")],
-        [InlineKeyboardButton(text="💳 Предоплата",     callback_data=f"cash:prepayment_in:{order_id}")],
-        [InlineKeyboardButton(text="🛒 Расход/запчасть",callback_data=f"cash:expense:{order_id}")],
+        [InlineKeyboardButton(text="💰 Полная оплата",   callback_data=f"cash:payment_in:{order_id}")],
+        [InlineKeyboardButton(text="💳 Предоплата",      callback_data=f"cash:prepayment_in:{order_id}")],
+        [InlineKeyboardButton(text="🛒 Расход/запчасть", callback_data=f"cash:expense:{order_id}")],
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
