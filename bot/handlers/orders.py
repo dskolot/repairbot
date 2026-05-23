@@ -51,7 +51,8 @@ async def search_order_prompt(msg: Message, state: FSMContext):
 @router.message(SearchOrder.waiting_num)
 async def search_order_result(msg: Message, state: FSMContext, db_user: dict, user_role: str):
     await state.clear()
-    order = get_order_by_num(msg.text.strip())
+    num = msg.text.strip().upper().replace(" ", "")
+    order = get_order_by_num(num)
     if not order:
         await msg.answer("❌ Заказ не найден. Проверьте номер.")
         return
