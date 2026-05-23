@@ -72,10 +72,10 @@ async def order_by_command(msg: Message, db_user: dict, user_role: str):
     await _show_order(msg, order, db_user, user_role)
 
 
-async def _show_order(msg: Message, order: dict, db_user: dict, user_role: str):
+async def _show_order(msg, order: dict, db_user: dict, user_role: str):
     text = fmt_order_card(order)
     kb = order_actions(order["id"], user_role)
-    await msg.answer(text, reply_markup=kb, parse_mode="Markdown")
+    await msg.answer(text, reply_markup=kb)
 
 
 # ── СМЕНА СТАТУСА ───────────────────────────────────────────
