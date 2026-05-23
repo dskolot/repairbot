@@ -60,7 +60,17 @@ def get_order_by_id(order_id: str):
 def get_order_by_num(order_num: str):
     sb = get_sb()
     res = sb.table("orders").select("*, clients(*), users!orders_master_id_fkey(*)").eq("order_num", order_num.upper()).execute()
-    return res.data[0] if res.data else None
+    return res.data[0] if res.data else Nonedef get_order_by_num(order_num: str):
+    try:
+        sb = get_sb()
+        num = order_num.strip().upper()
+        print(f"[SEARCH] Looking for order: '{num}'")
+        res = sb.table("orders").select("*, clients(*), users!orders_master_id_fkey(*)").eq("order_num", num).execute()
+        print(f"[SEARCH] Result: {res.data}")
+        return res.data[0] if res.data else None
+    except Exception as e:
+        print(f"[SEARCH ERROR] {e}")
+        return None
 
 
 def get_active_orders(master_id: str = None):
