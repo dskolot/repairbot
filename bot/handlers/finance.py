@@ -162,9 +162,11 @@ async def part_cost_entered(msg: Message, state: FSMContext, db_user: dict):
     )
 
 
-@router.callback_query(F.data.startswith("part_status:"))
+@router.callback_query(F.data.startswith("ps:"))
 async def part_status_menu(cb: CallbackQuery):
-    _, part_id, order_id = cb.data.split(":")
+    _, short_part_id, short_order_id = cb.data.split(":")
+    from db.queries import get_parts_for_order_short
+    part_id, order_id = short_part_id, short_order_id
     await cb.message.edit_text(
         "📦 Обновите статус запчасти:",
         reply_markup=part_status_keyboard(part_id, order_id)
