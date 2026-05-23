@@ -169,14 +169,20 @@ def get_orders_stats(days: int = 30):
 
 def get_order_by_short_id(short_id: str):
     sb = get_sb()
-    res = sb.table("orders").select("*").like("id", f"{short_id}%").execute()
-    return res.data[0] if res.data else None
+    res = sb.table("orders").select("*").execute()
+    for row in res.data:
+        if row["id"].startswith(short_id):
+            return row
+    return None
 
 
 def get_part_by_short_id(short_id: str):
     sb = get_sb()
-    res = sb.table("parts").select("*").like("id", f"{short_id}%").execute()
-    return res.data[0] if res.data else None
+    res = sb.table("parts").select("*").execute()
+    for row in res.data:
+        if row["id"].startswith(short_id):
+            return row
+    return None
 
 
 def get_cash_summary_with_orders(days: int = 30):
