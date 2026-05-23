@@ -46,7 +46,7 @@ class AddPayment(StatesGroup):
 async def cash_type_selected(cb: CallbackQuery, state: FSMContext):
     _, cash_type, order_id = cb.data.split(":")
     await state.update_data(cash_type=cash_type, order_id=order_id)
-    await cb.message.answer("💵 Введите сумму в рублях:")
+    await cb.message.answer("💵 Введите сумму в евро:")
     await state.set_state(AddPayment.waiting_amount)
 
 
