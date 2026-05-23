@@ -5,13 +5,15 @@ from core.config import STATUSES, DEVICE_TYPES, PRIORITIES, CASH_TYPES
 def main_menu(role: str) -> ReplyKeyboardMarkup:
     buttons = [[KeyboardButton(text="📋 Мои заказы"), KeyboardButton(text="🔍 Найти заказ")]]
 
-    if role in ("admin", "owner"):
+    if role == "master":
         buttons.append([KeyboardButton(text="➕ Новый заказ"), KeyboardButton(text="📊 Все заказы")])
         buttons.append([KeyboardButton(text="💰 Касса"), KeyboardButton(text="📤 Расходы")])
         buttons.append([KeyboardButton(text="📈 Статистика")])
 
-    if role == "master":
-        buttons.append([KeyboardButton(text="➕ Новый заказ")])
+    if role in ("admin", "owner"):
+        buttons.append([KeyboardButton(text="➕ Новый заказ"), KeyboardButton(text="📊 Все заказы")])
+        buttons.append([KeyboardButton(text="💰 Касса"), KeyboardButton(text="📤 Расходы")])
+        buttons.append([KeyboardButton(text="📈 Статистика")])
 
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
@@ -49,7 +51,7 @@ def order_actions(order_id: str, role: str) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="🔧 Запчасти",        callback_data=f"parts:{order_id}")],
         [InlineKeyboardButton(text="💰 Добавить оплату", callback_data=f"pay:{order_id}")],
     ]
-    if role in ("admin", "owner"):
+    if role in ("admin", "owner", "master"):
         btns.append([InlineKeyboardButton(text="👤 Назначить мастера", callback_data=f"assign:{order_id}")])
         btns.append([InlineKeyboardButton(text="✏️ Изменить цену",     callback_data=f"edit_price:{order_id}")])
     return InlineKeyboardMarkup(inline_keyboard=btns)
