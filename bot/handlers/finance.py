@@ -24,7 +24,7 @@ async def cash_menu(msg: Message, user_role: str):
         await msg.answer("❌ Недостаточно прав.")
         return
     summary = get_cash_summary(days=30)
-    await msg.answer(fmt_cash_summary(summary, days=30), parse_mode="Markdown")
+    await msg.answer(fmt_cash_summary(summary, days=30))
 
 
 @router.callback_query(F.data.startswith("pay:"))
@@ -62,7 +62,7 @@ async def cash_amount_entered(msg: Message, state: FSMContext, db_user: dict, us
     cash_type = data["cash_type"]
     order_id = data["order_id"]
 
-    entry = add_cash_entry(
+    add_cash_entry(
         user_id=db_user["id"],
         type_=cash_type,
         amount=amount,
@@ -70,7 +70,8 @@ async def cash_amount_entered(msg: Message, state: FSMContext, db_user: dict, us
         description=f"Платёж по заказу"
     )
 
-    if cash_type == "payment_in":
+    # Обновляем предоплату в карточке заказа для любого входящего платежа
+    if cash_type in ("payment_in", "prepayment_in"):
         from db.queries import update_order_field
         order = get_order_by_id(order_id)
         current = order.get("prepayment", 0) or 0
@@ -82,6 +83,7 @@ async def cash_amount_entered(msg: Message, state: FSMContext, db_user: dict, us
     await msg.answer(
         f"✅ Платёж {amount:,} ₽ зафиксирован.\n\n{fmt_order_card(order)}",
         reply_markup=order_actions(order_id, user_role),
+        parse_mode="Markdown"
     )
 
 
@@ -95,18 +97,10 @@ async def show_parts(cb: CallbackQuery):
     parts = get_parts_for_order(order_id)
     kb = parts_keyboard(parts, order_id)
     if parts:
-        lines = ["🔧 Запчасти к заказу:\n"]
-        for p in parts:
-            status_emoji = {"needed": "🔴", "ordered": "🟡", "arrived": "🟢", "installed": "✅"}.get(p["status"], "")
-            lines.append(f"{status_emoji} {p['name']} — {p['cost']} €")
-        text = "\n".join(lines)
+        text = f"🔧 Запчасти к заказу — {len(parts)} шт."
     else:
         text = "🔧 Запчасти ещё не добавлены."
-    try:
-        await cb.message.edit_text(text, reply_markup=kb)
-    except Exception:
-        await cb.message.answer(text, reply_markup=kb)
-    await cb.answer()
+    await cb.message.edit_text(text, reply_markup=kb)
 
 
 class AddPart(StatesGroup):
@@ -117,10 +111,7 @@ class AddPart(StatesGroup):
 
 @router.callback_query(F.data.startswith("add_part:"))
 async def add_part_prompt(cb: CallbackQuery, state: FSMContext):
-    short_id = cb.data.split(":")[1]
-    from db.queries import get_order_by_short_id
-    order = get_order_by_short_id(short_id)
-    order_id = order["id"] if order else short_id
+    order_id = cb.data.split(":")[1]
     await state.update_data(order_id=order_id)
     await cb.message.answer("📦 Введите *название* запчасти:", parse_mode="Markdown")
     await state.set_state(AddPart.waiting_name)
@@ -129,12 +120,12 @@ async def add_part_prompt(cb: CallbackQuery, state: FSMContext):
 @router.message(AddPart.waiting_name)
 async def part_name_entered(msg: Message, state: FSMContext):
     await state.update_data(part_name=msg.text.strip())
-    await msg.answer("💰 Введите стоимость запчасти (в евро):")
+    await msg.answer("💰 Введите стоимость запчасти (в рублях):")
     await state.set_state(AddPart.waiting_cost)
 
 
 @router.message(AddPart.waiting_cost)
-async def part_cost_entered(msg: Message, state: FSMContext, db_user: dict):
+async def part_cost_entered(msg: Message, state: FSMContext):
     try:
         cost = int(msg.text.strip())
     except ValueError:
@@ -144,39 +135,26 @@ async def part_cost_entered(msg: Message, state: FSMContext, db_user: dict):
     data = await state.get_data()
     order_id = data["order_id"]
     part = add_part(order_id, data["part_name"], cost)
-
-    # Автоматически записываем расход в кассу
-    if cost > 0:
-        add_cash_entry(
-            user_id=db_user["id"],
-            type_="expense",
-            amount=cost,
-            description=f"Запчасть: {data['part_name']}",
-            order_id=order_id
-        )
-
     await state.clear()
 
     parts = get_parts_for_order(order_id)
     await msg.answer(
-        f"✅ Запчасть добавлена: {part['name']} — {cost} €\n"
-        f"💸 Расход {cost} € записан в кассу.",
+        f"✅ Запчасть добавлена: *{part['name']}* — {cost:,} ₽",
         reply_markup=parts_keyboard(parts, order_id),
+        parse_mode="Markdown"
     )
 
 
-@router.callback_query(F.data.startswith("ps:"))
+@router.callback_query(F.data.startswith("part_status:"))
 async def part_status_menu(cb: CallbackQuery):
-    _, short_part_id, short_order_id = cb.data.split(":")
-    from db.queries import get_parts_for_order_short
-    part_id, order_id = short_part_id, short_order_id
+    _, part_id, order_id = cb.data.split(":")
     await cb.message.edit_text(
         "📦 Обновите статус запчасти:",
         reply_markup=part_status_keyboard(part_id, order_id)
     )
 
 
-@router.callback_query(F.data.startswith("sp:"))
+@router.callback_query(F.data.startswith("set_part:"))
 async def set_part_status(cb: CallbackQuery):
     _, part_id, new_status, order_id = cb.data.split(":")
     update_part_status(part_id, new_status)
@@ -205,9 +183,9 @@ async def stats_menu(msg: Message, db_user: dict, user_role: str):
             f"📋 Всего заказов:  {stats['total']}\n"
             f"✅ Выполнено:      {stats['done']}\n"
             f"❌ Отменено:       {stats['cancelled']}\n"
-            f"💰 Выручка:        {stats['revenue']:,} €\n\n"
-            f"📈 Приход (касса): {cash['income']:,} €\n"
-            f"📉 Расход (касса): {cash['expense']:,} €\n"
-            f"💵 Прибыль:        {cash['profit']:,} €"
+            f"💰 Выручка:        {stats['revenue']:,} ₽\n\n"
+            f"📈 Приход (касса): {cash['income']:,} ₽\n"
+            f"📉 Расход (касса): {cash['expense']:,} ₽\n"
+            f"💵 Прибыль:        {cash['profit']:,} ₽"
         )
     await msg.answer(text, parse_mode="Markdown")
