@@ -177,3 +177,15 @@ def get_part_by_short_id(short_id: str):
     sb = get_sb()
     res = sb.table("parts").select("*").like("id", f"{short_id}%").execute()
     return res.data[0] if res.data else None
+
+
+def get_cash_summary_with_orders(days: int = 30):
+    sb = get_sb()
+    from datetime import datetime, timedelta
+    since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    res = sb.table("cash_log").select("*, orders(order_num)").gte("created_at", since).execute()
+    entries = res.data
+    from core.config import INCOME_TYPES
+    income = sum(e["amount"] for e in entries if e["type"] in INCOME_TYPES)
+    expense = sum(e["amount"] for e in entries if e["type"] not in INCOME_TYPES)
+    return {"income": income, "expense": expense, "profit": income - expense, "entries": entries}
