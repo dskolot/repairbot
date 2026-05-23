@@ -22,7 +22,7 @@ def get_user_by_telegram(telegram_id: str):
 
 def get_all_masters():
     sb = get_sb()
-    res = sb.table("users").select("*").in_("role", ["master", "admin"]).eq("is_active", True).execute()
+    res = sb.table("users").select("*").eq("role", "master").execute()
     return res.data
 
 
