@@ -73,7 +73,7 @@ async def got_device_model(msg: Message, state: FSMContext):
 async def got_malfunction(msg: Message, state: FSMContext):
     await state.update_data(malfunction=msg.text.strip())
     await msg.answer(
-        "💰 Введите *предварительную стоимость* ремонта в рублях\n"
+        "💰 Введите *предварительную стоимость* ремонта в евро\n"
         "(или 0, если цена ещё неизвестна):",
         parse_mode="Markdown"
     )
