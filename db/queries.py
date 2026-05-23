@@ -1,4 +1,3 @@
-import os
 from supabase import create_client
 from core.config import SUPABASE_URL, SUPABASE_KEY, INCOME_TYPES
 
@@ -7,13 +6,11 @@ def get_sb():
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
-# ── ПОЛЬЗОВАТЕЛИ ────────────────────────────────────────────
-
 def get_user_by_telegram(telegram_id: str):
     try:
         sb = get_sb()
         res = sb.table("users").select("*").eq("telegram_id", str(telegram_id)).execute()
-        print(f"[AUTH] Looking for tg_id={telegram_id}, found={res.data}")
+        print(f"[AUTH] tg_id={telegram_id}, found={len(res.data)}")
         return res.data[0] if res.data else None
     except Exception as e:
         print(f"[AUTH ERROR] {e}")
@@ -25,8 +22,6 @@ def get_all_masters():
     res = sb.table("users").select("*").eq("role", "master").execute()
     return res.data
 
-
-# ── КЛИЕНТЫ ─────────────────────────────────────────────────
 
 def find_or_create_client(name: str, phone: str):
     sb = get_sb()
@@ -43,8 +38,6 @@ def get_client_by_id(client_id: str):
     return res.data[0] if res.data else None
 
 
-# ── ЗАКАЗЫ ──────────────────────────────────────────────────
-
 def create_order(data: dict):
     sb = get_sb()
     res = sb.table("orders").insert(data).execute()
@@ -58,15 +51,12 @@ def get_order_by_id(order_id: str):
 
 
 def get_order_by_num(order_num: str):
-    sb = get_sb()
-    res = sb.table("orders").select("*, clients(*), users!orders_master_id_fkey(*)").eq("order_num", order_num.upper()).execute()
-    return res.data[0] if res.data else Nonedef get_order_by_num(order_num: str):
     try:
         sb = get_sb()
         num = order_num.strip().upper()
-        print(f"[SEARCH] Looking for order: '{num}'")
+        print(f"[SEARCH] order_num='{num}'")
         res = sb.table("orders").select("*, clients(*), users!orders_master_id_fkey(*)").eq("order_num", num).execute()
-        print(f"[SEARCH] Result: {res.data}")
+        print(f"[SEARCH] found={len(res.data)}")
         return res.data[0] if res.data else None
     except Exception as e:
         print(f"[SEARCH ERROR] {e}")
@@ -109,8 +99,6 @@ def assign_master(order_id: str, master_id: str):
     return get_order_by_id(order_id)
 
 
-# ── ЗАПЧАСТИ ────────────────────────────────────────────────
-
 def add_part(order_id: str, name: str, cost: int):
     sb = get_sb()
     res = sb.table("parts").insert({"order_id": order_id, "name": name, "cost": cost}).execute()
@@ -127,12 +115,9 @@ def get_parts_for_order(order_id: str):
 
 def update_part_status(part_id: str, new_status: str):
     sb = get_sb()
-    data = {"status": new_status}
-    res = sb.table("parts").update(data).eq("id", part_id).execute()
+    res = sb.table("parts").update({"status": new_status}).eq("id", part_id).execute()
     return res.data[0]
 
-
-# ── КАССА ───────────────────────────────────────────────────
 
 def add_cash_entry(user_id: str, type_: str, amount: int, description: str = "", order_id: str = None):
     sb = get_sb()
@@ -152,8 +137,6 @@ def get_cash_summary(days: int = 30):
     expense = sum(e["amount"] for e in res.data if e["type"] not in INCOME_TYPES)
     return {"income": income, "expense": expense, "profit": income - expense, "entries": res.data}
 
-
-# ── АНАЛИТИКА ───────────────────────────────────────────────
 
 def get_master_stats(master_id: str, days: int = 30):
     sb = get_sb()
