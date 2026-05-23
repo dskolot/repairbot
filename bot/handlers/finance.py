@@ -189,3 +189,101 @@ async def stats_menu(msg: Message, db_user: dict, user_role: str):
             f"💵 Прибыль:        {cash['profit']:,} ₽"
         )
     await msg.answer(text, parse_mode="Markdown")
+
+
+# ══════════════════════════════════════════
+# РАСХОДЫ (зарплаты, долги, прочее)
+# ══════════════════════════════════════════
+
+class AddExpense(StatesGroup):
+    exp_type     = State()
+    master_id    = State()
+    amount       = State()
+    description  = State()
+
+
+EXP_LABELS = {
+    "salary":       "Зарплата мастеру",
+    "admin_salary": "Зарплата администратору",
+    "debt":         "Долг / аванс мастеру",
+    "transport":    "Бензин / транспорт",
+    "equipment":    "Оборудование",
+    "other":        "Прочий расход",
+}
+
+NEEDS_MASTER = {"salary", "debt"}
+
+
+@router.message(F.text == "📤 Расходы")
+async def expenses_menu(msg: Message, state: FSMContext, user_role: str):
+    if user_role not in ("admin", "owner"):
+        await msg.answer("❌ Недостаточно прав.")
+        return
+    from bot.keyboards.kb import expense_type_keyboard
+    await msg.answer("📤 Выберите тип расхода:", reply_markup=expense_type_keyboard())
+    await state.set_state(AddExpense.exp_type)
+
+
+@router.callback_query(AddExpense.exp_type, F.data.startswith("exp:"))
+async def exp_type_selected(cb: CallbackQuery, state: FSMContext):
+    exp_type = cb.data.split(":")[1]
+    await state.update_data(exp_type=exp_type)
+
+    if exp_type in NEEDS_MASTER:
+        from db.queries import get_all_masters
+        from bot.keyboards.kb import expense_masters_keyboard
+        masters = get_all_masters()
+        await cb.message.answer("👨‍🔧 Выберите мастера:", reply_markup=expense_masters_keyboard(masters))
+        await state.set_state(AddExpense.master_id)
+    else:
+        await cb.message.answer("💵 Введите сумму в евро:")
+        await state.set_state(AddExpense.amount)
+    await cb.answer()
+
+
+@router.callback_query(AddExpense.master_id, F.data.startswith("exp_master:"))
+async def exp_master_selected(cb: CallbackQuery, state: FSMContext):
+    master_id = cb.data.split(":")[1]
+    await state.update_data(master_id=master_id)
+    await cb.message.answer("💵 Введите сумму в евро:")
+    await state.set_state(AddExpense.amount)
+    await cb.answer()
+
+
+@router.message(AddExpense.amount)
+async def exp_amount_entered(msg: Message, state: FSMContext):
+    try:
+        amount = int(msg.text.strip())
+    except ValueError:
+        await msg.answer("❌ Введите число, например: 50")
+        return
+    await state.update_data(amount=amount)
+    await msg.answer("📝 Добавьте комментарий (или напишите - чтобы пропустить):")
+    await state.set_state(AddExpense.description)
+
+
+@router.message(AddExpense.description)
+async def exp_description_entered(msg: Message, state: FSMContext, db_user: dict):
+    data = await state.get_data()
+    exp_type = data["exp_type"]
+    amount   = data["amount"]
+    comment  = msg.text.strip() if msg.text.strip() != "-" else ""
+    label    = EXP_LABELS.get(exp_type, "Расход")
+
+    description = f"{label}"
+    if comment:
+        description += f": {comment}"
+
+    add_cash_entry(
+        user_id=db_user["id"],
+        type_="salary" if exp_type in ("salary", "admin_salary", "debt") else "other_out",
+        amount=amount,
+        description=description,
+    )
+
+    await state.clear()
+    await msg.answer(
+        f"✅ Расход зафиксирован\n\n"
+        f"📝 {description}\n"
+        f"💸 Сумма: {amount} €"
+    )
