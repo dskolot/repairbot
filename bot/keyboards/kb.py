@@ -115,3 +115,11 @@ def confirm_keyboard(yes_data: str, no_data: str = "cancel") -> InlineKeyboardMa
         InlineKeyboardButton(text="✅ Да", callback_data=yes_data),
         InlineKeyboardButton(text="❌ Отмена", callback_data=no_data),
     ]])
+
+
+def cash_detail_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💼 Итого за 30 дней",   callback_data="cash_summary")],
+        [InlineKeyboardButton(text="📈 Все приходы",        callback_data="cash_income")],
+        [InlineKeyboardButton(text="📉 Все расходы",        callback_data="cash_expense")],
+    ])
