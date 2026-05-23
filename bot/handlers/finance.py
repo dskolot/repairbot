@@ -95,10 +95,18 @@ async def show_parts(cb: CallbackQuery):
     parts = get_parts_for_order(order_id)
     kb = parts_keyboard(parts, order_id)
     if parts:
-        text = f"🔧 Запчасти к заказу — {len(parts)} шт."
+        lines = ["🔧 Запчасти к заказу:\n"]
+        for p in parts:
+            status_emoji = {"needed": "🔴", "ordered": "🟡", "arrived": "🟢", "installed": "✅"}.get(p["status"], "")
+            lines.append(f"{status_emoji} {p['name']} — {p['cost']} €")
+        text = "\n".join(lines)
     else:
         text = "🔧 Запчасти ещё не добавлены."
-    await cb.message.edit_text(text, reply_markup=kb)
+    try:
+        await cb.message.edit_text(text, reply_markup=kb)
+    except Exception:
+        await cb.message.answer(text, reply_markup=kb)
+    await cb.answer()
 
 
 class AddPart(StatesGroup):
