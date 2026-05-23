@@ -31,10 +31,10 @@ def fmt_order_card(order: dict) -> str:
 
     lines += [
         f"",
-        f"💰 Цена ремонта: {price:,} ₽",
-        f"💳 Предоплата:   {prepay:,} ₽",
-        f"🛒 Запчасти:     {parts:,} ₽",
-        f"📌 К доплате:    {balance:,} ₽",
+        f"💰 Цена ремонта: {price:,} €",
+        f"💳 Предоплата:   {prepay:,} €",
+        f"🛒 Запчасти:     {parts:,} €",
+        f"📌 К доплате:    {balance:,} €",
     ]
 
     if order.get("comment"):
@@ -70,10 +70,10 @@ def fmt_cash_summary(summary: dict, days: int) -> str:
 
     return (
         f"💼 *Касса за {days} дней*\n\n"
-        f"📈 Приход:  {income:,} ₽\n"
-        f"📉 Расход:  {expense:,} ₽\n"
+        f"📈 Приход:  {income:,} €\n"
+        f"📉 Расход:  {expense:,} €\n"
         f"{'━' * 20}\n"
-        f"💰 Прибыль: {profit:,} ₽"
+        f"💰 Прибыль: {profit:,} €"
     )
 
 
@@ -83,5 +83,5 @@ def fmt_master_stats(stats: dict, name: str, days: int) -> str:
         f"📋 Всего заказов:  {stats['total']}\n"
         f"✅ Выполнено:      {stats['done']}\n"
         f"🔧 В работе:       {stats['in_progress']}\n"
-        f"💰 Выручка:        {stats['revenue']:,} ₽"
+        f"💰 Выручка:        {stats['revenue']:,} €"
     )
