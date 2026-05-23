@@ -84,7 +84,9 @@ def part_status_keyboard(part_id: str, order_id: str) -> InlineKeyboardMarkup:
         ("arrived",   "🟢 Пришла"),
         ("installed", "✅ Установлена"),
     ]
-    btns = [[InlineKeyboardButton(text=label, callback_data=f"set_part:{part_id}:{s}:{order_id}")]
+    short_part_id = part_id[:8]
+    short_order_id = order_id[:8]
+    btns = [[InlineKeyboardButton(text=label, callback_data=f"sp:{short_part_id}:{s}:{short_order_id}")]
             for s, label in statuses]
     btns.append([InlineKeyboardButton(text="◀️ Назад", callback_data=f"parts:{order_id}")])
     return InlineKeyboardMarkup(inline_keyboard=btns)
