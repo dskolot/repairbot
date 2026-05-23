@@ -14,7 +14,7 @@ def fmt_order_card(order: dict) -> str:
     balance = price - prepay
 
     lines = [
-        f"📋 *Заказ {order['order_num']}* {priority}",
+        f"📋 Заказ {order['order_num']} {priority}",
         f"",
         f"👤 Клиент: {client.get('name', '—')}",
         f"📞 Телефон: {client.get('phone', '—')}",
