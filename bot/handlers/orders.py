@@ -37,7 +37,7 @@ async def my_orders(msg: Message, db_user: dict, user_role: str):
 
 @router.message(F.text == "📊 Все заказы")
 async def all_orders(msg: Message, user_role: str):
-    if user_role not in ("admin", "owner"):
+    if user_role not in ("admin", "owner", "master"):
         await msg.answer("❌ Недостаточно прав.")
         return
     orders = get_active_orders()
