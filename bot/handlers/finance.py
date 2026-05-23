@@ -173,7 +173,7 @@ async def part_status_menu(cb: CallbackQuery):
     )
 
 
-@router.callback_query(F.data.startswith("set_part:"))
+@router.callback_query(F.data.startswith("sp:"))
 async def set_part_status(cb: CallbackQuery):
     _, part_id, new_status, order_id = cb.data.split(":")
     update_part_status(part_id, new_status)
