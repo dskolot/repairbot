@@ -20,7 +20,7 @@ router = Router()
 
 @router.message(F.text == "💰 Касса")
 async def cash_menu(msg: Message, user_role: str):
-    if user_role not in ("admin", "owner"):
+    if user_role not in ("admin", "owner", "master"):
         await msg.answer("❌ Недостаточно прав.")
         return
     from bot.keyboards.kb import cash_detail_keyboard
@@ -253,9 +253,8 @@ async def set_part_status(cb: CallbackQuery):
 
 @router.message(F.text == "📈 Статистика")
 async def stats_menu(msg: Message, db_user: dict, user_role: str):
-    if user_role == "master":
-        stats = get_master_stats(db_user["id"], days=30)
-        text = fmt_master_stats(stats, db_user["name"], days=30)
+    if False:  # все роли видят общую статистику
+        pass
     else:
         stats = get_orders_stats(days=30)
         cash = get_cash_summary(days=30)
@@ -297,6 +296,13 @@ NEEDS_MASTER = {"salary", "debt"}
 
 @router.message(F.text == "📤 Расходы")
 async def expenses_menu(msg: Message, state: FSMContext, user_role: str):
+    if user_role == "master":
+        await msg.answer(
+            "🚫 Раздел расходов недоступен.
+"
+            "Для выдачи зарплаты, аванса или списания расходов — обратитесь к администратору."
+        )
+        return
     if user_role not in ("admin", "owner"):
         await msg.answer("❌ Недостаточно прав.")
         return
