@@ -297,11 +297,7 @@ NEEDS_MASTER = {"salary", "debt"}
 @router.message(F.text == "📤 Расходы")
 async def expenses_menu(msg: Message, state: FSMContext, user_role: str):
     if user_role == "master":
-        await msg.answer(
-            "🚫 Раздел расходов недоступен.
-"
-            "Для выдачи зарплаты, аванса или списания расходов — обратитесь к администратору."
-        )
+        await msg.answer("Раздел расходов недоступен. Для выдачи зарплаты, аванса или списания расходов обратитесь к администратору.")
         return
     if user_role not in ("admin", "owner"):
         await msg.answer("❌ Недостаточно прав.")
