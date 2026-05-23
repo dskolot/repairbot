@@ -123,3 +123,23 @@ def cash_detail_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="📈 Все приходы",        callback_data="cash_income")],
         [InlineKeyboardButton(text="📉 Все расходы",        callback_data="cash_expense")],
     ])
+
+
+def orders_list_keyboard(orders: list) -> InlineKeyboardMarkup:
+    """Кликабельный список заказов — нажал на заказ и открыл его карточку"""
+    from core.config import STATUSES
+    status_emoji = {
+        "new": "🆕", "diagnosis": "🔍", "waiting_parts": "⏳",
+        "in_repair": "🔧", "done": "✅", "issued": "📦", "cancelled": "❌"
+    }
+    btns = []
+    for o in orders:
+        client = o.get("clients") or {}
+        e = status_emoji.get(o["status"], "•")
+        name = client.get("name", "?")[:15]
+        model = (o.get("device_model") or "")[:15]
+        btns.append([InlineKeyboardButton(
+            text=f"{e} {o['order_num']} | {name} | {model}",
+            callback_data=f"open_order:{o['id']}"
+        )])
+    return InlineKeyboardMarkup(inline_keyboard=btns)
