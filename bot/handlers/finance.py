@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
 from db.queries import (
-    add_cash_entry, get_cash_summary,
+    add_cash_entry, get_cash_summary, get_cash_log_with_orders,
     add_part, get_parts_for_order, update_part_status,
     get_order_by_id, get_master_stats, get_orders_stats
 )
@@ -37,7 +37,7 @@ async def show_cash_summary(cb: CallbackQuery):
 @router.callback_query(F.data == "cash_income")
 async def show_cash_income(cb: CallbackQuery):
     from core.config import INCOME_TYPES
-    summary = get_cash_summary(days=30)
+    summary = get_cash_log_with_orders(days=30)
     entries = [e for e in summary["entries"] if e["type"] in INCOME_TYPES]
     if not entries:
         await cb.message.answer("За 30 дней приходов не было.")
@@ -46,7 +46,10 @@ async def show_cash_income(cb: CallbackQuery):
     lines = ["📈 Приходы за 30 дней:\n"]
     for e in entries[-20:]:
         date = e["created_at"][:10]
-        lines.append(f"{date} | +{e['amount']} € | {e['description'] or e['type']}")
+        order_num = e.get("order_num", "")
+        order_str = f" ({order_num})" if order_num else ""
+        desc = e["description"] or e["type"]
+        lines.append(f"{date} | +{e['amount']} € | {desc}{order_str}")
     lines.append(f"\nИтого: {sum(e['amount'] for e in entries)} €")
     await cb.message.answer("\n".join(lines))
     await cb.answer()
@@ -55,7 +58,7 @@ async def show_cash_income(cb: CallbackQuery):
 @router.callback_query(F.data == "cash_expense")
 async def show_cash_expense(cb: CallbackQuery):
     from core.config import INCOME_TYPES
-    summary = get_cash_summary(days=30)
+    summary = get_cash_log_with_orders(days=30)
     entries = [e for e in summary["entries"] if e["type"] not in INCOME_TYPES]
     if not entries:
         await cb.message.answer("За 30 дней расходов не было.")
@@ -64,7 +67,10 @@ async def show_cash_expense(cb: CallbackQuery):
     lines = ["📉 Расходы за 30 дней:\n"]
     for e in entries[-20:]:
         date = e["created_at"][:10]
-        lines.append(f"{date} | -{e['amount']} € | {e['description'] or e['type']}")
+        order_num = e.get("order_num", "")
+        order_str = f" ({order_num})" if order_num else ""
+        desc = e["description"] or e["type"]
+        lines.append(f"{date} | -{e['amount']} € | {desc}{order_str}")
     lines.append(f"\nИтого: {sum(e['amount'] for e in entries)} €")
     await cb.message.answer("\n".join(lines))
     await cb.answer()
