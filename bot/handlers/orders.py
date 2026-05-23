@@ -65,7 +65,7 @@ async def order_by_command(msg: Message, db_user: dict, user_role: str):
     if len(parts) < 2:
         await msg.answer("Используйте: /order SC-0042")
         return
-    order = get_order_by_num(parts[1])
+    order = get_order_by_num(parts[1].upper().strip())
     if not order:
         await msg.answer("❌ Заказ не найден.")
         return
