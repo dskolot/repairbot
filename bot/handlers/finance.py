@@ -82,7 +82,6 @@ async def cash_amount_entered(msg: Message, state: FSMContext, db_user: dict, us
     await msg.answer(
         f"✅ Платёж {amount:,} ₽ зафиксирован.\n\n{fmt_order_card(order)}",
         reply_markup=order_actions(order_id, user_role),
-        parse_mode="Markdown"
     )
 
 
