@@ -68,11 +68,13 @@ def parts_keyboard(parts: list, order_id: str) -> InlineKeyboardMarkup:
     btns = []
     for p in parts:
         status_emoji = {"needed": "🔴", "ordered": "🟡", "arrived": "🟢", "installed": "✅"}.get(p["status"], "")
+        short_part_id = p['id'][:8]
+        short_order_id = order_id[:8]
         btns.append([InlineKeyboardButton(
-            text=f"{status_emoji} {p['name']} — {p['cost']} ₽",
-            callback_data=f"part_status:{p['id']}:{order_id}"
+            text=f"{status_emoji} {p['name']} — {p['cost']} €",
+            callback_data=f"ps:{short_part_id}:{short_order_id}"
         )])
-    btns.append([InlineKeyboardButton(text="➕ Добавить запчасть", callback_data=f"add_part:{order_id}")])
+    btns.append([InlineKeyboardButton(text="➕ Добавить запчасть", callback_data=f"add_part:{order_id[:8]}")])
     return InlineKeyboardMarkup(inline_keyboard=btns)
 
 
