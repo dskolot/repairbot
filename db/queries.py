@@ -223,3 +223,51 @@ def get_cash_log_with_orders(days: int = 30):
     income = sum(e["amount"] for e in entries if e["type"] in INCOME_TYPES)
     expense = sum(e["amount"] for e in entries if e["type"] not in INCOME_TYPES)
     return {"income": income, "expense": expense, "profit": income - expense, "entries": entries}
+
+
+def search_orders(query: str) -> list:
+    """Поиск заказов по имени клиента, телефону, модели устройства или запчасти"""
+    sb = get_sb()
+    q = query.strip().lower()
+    results = []
+    seen_ids = set()
+
+    # По модели устройства
+    r1 = sb.table("orders").select("*, clients(name, phone), users!orders_master_id_fkey(name)").ilike("device_model", f"%{q}%").execute()
+    for o in r1.data:
+        if o["id"] not in seen_ids:
+            results.append(o)
+            seen_ids.add(o["id"])
+
+    # По неисправности
+    r2 = sb.table("orders").select("*, clients(name, phone), users!orders_master_id_fkey(name)").ilike("malfunction", f"%{q}%").execute()
+    for o in r2.data:
+        if o["id"] not in seen_ids:
+            results.append(o)
+            seen_ids.add(o["id"])
+
+    # По имени клиента
+    clients = sb.table("clients").select("id, name, phone").ilike("name", f"%{q}%").execute()
+    client_ids = [c["id"] for c in clients.data]
+    if not client_ids:
+        # По телефону
+        clients2 = sb.table("clients").select("id").ilike("phone", f"%{q}%").execute()
+        client_ids = [c["id"] for c in clients2.data]
+    if client_ids:
+        r3 = sb.table("orders").select("*, clients(name, phone), users!orders_master_id_fkey(name)").in_("client_id", client_ids).execute()
+        for o in r3.data:
+            if o["id"] not in seen_ids:
+                results.append(o)
+                seen_ids.add(o["id"])
+
+    # По названию запчасти
+    parts = sb.table("parts").select("order_id").ilike("name", f"%{q}%").execute()
+    part_order_ids = list(set(p["order_id"] for p in parts.data))
+    if part_order_ids:
+        r4 = sb.table("orders").select("*, clients(name, phone), users!orders_master_id_fkey(name)").in_("id", part_order_ids).execute()
+        for o in r4.data:
+            if o["id"] not in seen_ids:
+                results.append(o)
+                seen_ids.add(o["id"])
+
+    return results
