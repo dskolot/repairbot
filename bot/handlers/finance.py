@@ -117,7 +117,10 @@ class AddPart(StatesGroup):
 
 @router.callback_query(F.data.startswith("add_part:"))
 async def add_part_prompt(cb: CallbackQuery, state: FSMContext):
-    order_id = cb.data.split(":")[1]
+    short_id = cb.data.split(":")[1]
+    from db.queries import get_order_by_short_id
+    order = get_order_by_short_id(short_id)
+    order_id = order["id"] if order else short_id
     await state.update_data(order_id=order_id)
     await cb.message.answer("📦 Введите *название* запчасти:", parse_mode="Markdown")
     await state.set_state(AddPart.waiting_name)
