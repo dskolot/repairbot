@@ -123,7 +123,7 @@ async def part_name_entered(msg: Message, state: FSMContext):
 
 
 @router.message(AddPart.waiting_cost)
-async def part_cost_entered(msg: Message, state: FSMContext):
+async def part_cost_entered(msg: Message, state: FSMContext, db_user: dict):
     try:
         cost = int(msg.text.strip())
     except ValueError:
@@ -133,13 +133,24 @@ async def part_cost_entered(msg: Message, state: FSMContext):
     data = await state.get_data()
     order_id = data["order_id"]
     part = add_part(order_id, data["part_name"], cost)
+
+    # Автоматически записываем расход в кассу
+    if cost > 0:
+        add_cash_entry(
+            user_id=db_user["id"],
+            type_="expense",
+            amount=cost,
+            description=f"Запчасть: {data['part_name']}",
+            order_id=order_id
+        )
+
     await state.clear()
 
     parts = get_parts_for_order(order_id)
     await msg.answer(
-        f"✅ Запчасть добавлена: *{part['name']}* — {cost:,} ₽",
+        f"✅ Запчасть добавлена: {part['name']} — {cost} €\n"
+        f"💸 Расход {cost} € записан в кассу.",
         reply_markup=parts_keyboard(parts, order_id),
-        parse_mode="Markdown"
     )
 
 
