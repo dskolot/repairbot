@@ -12,7 +12,7 @@ def get_sb():
 def get_user_by_telegram(telegram_id: str):
     try:
         sb = get_sb()
-        res = sb.table("users").select("*").eq("telegram_id", str(telegram_id)).eq("is_active", True).execute()
+        res = sb.table("users").select("*").eq("telegram_id", str(telegram_id)).execute()
         print(f"[AUTH] Looking for tg_id={telegram_id}, found={res.data}")
         return res.data[0] if res.data else None
     except Exception as e:
