@@ -189,3 +189,31 @@ def get_cash_summary_with_orders(days: int = 30):
     income = sum(e["amount"] for e in entries if e["type"] in INCOME_TYPES)
     expense = sum(e["amount"] for e in entries if e["type"] not in INCOME_TYPES)
     return {"income": income, "expense": expense, "profit": income - expense, "entries": entries}
+
+
+def get_cash_log_with_orders(days: int = 30):
+    sb = get_sb()
+    from datetime import datetime, timedelta
+    since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+
+    # Получаем все записи кассы
+    res = sb.table("cash_log").select("*").gte("created_at", since).execute()
+    entries = res.data
+
+    # Собираем уникальные order_id
+    order_ids = list(set(e["order_id"] for e in entries if e.get("order_id")))
+
+    # Получаем номера заказов одним запросом
+    order_map = {}
+    if order_ids:
+        orders_res = sb.table("orders").select("id, order_num").in_("id", order_ids).execute()
+        order_map = {o["id"]: o["order_num"] for o in orders_res.data}
+
+    # Добавляем order_num к каждой записи
+    for e in entries:
+        e["order_num"] = order_map.get(e.get("order_id"), "")
+
+    from core.config import INCOME_TYPES
+    income = sum(e["amount"] for e in entries if e["type"] in INCOME_TYPES)
+    expense = sum(e["amount"] for e in entries if e["type"] not in INCOME_TYPES)
+    return {"income": income, "expense": expense, "profit": income - expense, "entries": entries}
