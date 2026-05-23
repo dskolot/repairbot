@@ -139,6 +139,5 @@ async def _create_order_final(msg, state: FSMContext):
 
     await state.clear()
     await msg.answer(
-        f"✅ *Заказ создан!*\n\n{fmt_order_card(order_full)}",
-        parse_mode="Markdown"
+        f"✅ Заказ создан!\n\n{fmt_order_card(order_full)}",
     )
