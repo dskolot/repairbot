@@ -165,3 +165,9 @@ def get_orders_stats(days: int = 30):
         "cancelled": len([o for o in orders if o["status"] == "cancelled"]),
         "revenue": sum(o["price"] for o in orders if o["status"] in ("done", "issued")),
     }
+
+
+def get_order_by_short_id(short_id: str):
+    sb = get_sb()
+    res = sb.table("orders").select("*").like("id", f"{short_id}%").execute()
+    return res.data[0] if res.data else None
