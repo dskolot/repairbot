@@ -271,3 +271,87 @@ def search_orders(query: str) -> list:
                 seen_ids.add(o["id"])
 
     return results
+
+
+# ── НАЧИСЛЕНИЯ МАСТЕРАМ ─────────────────────────────────────
+
+def create_earning(order_id: str, master_id: str, order_num: str,
+                   repair_price: int, parts_cost: int, master_percent: int = 40):
+    sb = get_sb()
+    profit = repair_price - parts_cost
+    master_amount = max(0, int(repair_price * master_percent / 100))
+    master_loss_amount = abs(min(0, profit))
+    data = {
+        "order_id":          order_id,
+        "master_id":         master_id,
+        "order_num":         order_num,
+        "repair_price":      repair_price,
+        "parts_cost":        parts_cost,
+        "profit":            profit,
+        "master_percent":    master_percent,
+        "master_amount":     master_amount,
+        "master_loss_percent": 0,
+        "master_loss_amount":  0,
+    }
+    res = sb.table("master_earnings").insert(data).execute()
+    return res.data[0]
+
+
+def get_earnings_by_master(master_id: str, days: int = 30):
+    sb = get_sb()
+    from datetime import datetime, timedelta
+    since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    res = sb.table("master_earnings").select("*").eq("master_id", master_id).gte("created_at", since).execute()
+    return res.data
+
+
+def get_all_earnings(days: int = 30):
+    sb = get_sb()
+    from datetime import datetime, timedelta
+    since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    res = sb.table("master_earnings").select("*, users(name)").gte("created_at", since).execute()
+    return res.data
+
+
+def get_earning_by_order(order_id: str):
+    sb = get_sb()
+    res = sb.table("master_earnings").select("*").eq("order_id", order_id).execute()
+    return res.data[0] if res.data else None
+
+
+def update_earning_loss(earning_id: str, master_loss_percent: int):
+    sb = get_sb()
+    earning = sb.table("master_earnings").select("*").eq("id", earning_id).execute().data[0]
+    loss = earning.get("master_loss_amount", 0) or abs(min(0, earning["profit"]))
+    master_loss_amount = int(loss * master_loss_percent / 100)
+    sb.table("master_earnings").update({
+        "master_loss_percent": master_loss_percent,
+        "master_loss_amount":  master_loss_amount,
+    }).eq("id", earning_id).execute()
+
+
+def get_master_salary_summary(master_id: str, days: int = 30):
+    """Сколько заработал, сколько выплачено, сколько должны"""
+    sb = get_sb()
+    from datetime import datetime, timedelta
+    from core.config import INCOME_TYPES
+    since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+
+    earnings = sb.table("master_earnings").select("*").eq("master_id", master_id).gte("created_at", since).execute().data
+    total_earned = sum(e["master_amount"] for e in earnings)
+    total_loss   = sum(e["master_loss_amount"] for e in earnings)
+    net_earned   = total_earned - total_loss
+
+    # Выплаченные зарплаты из кассы
+    paid = sb.table("cash_log").select("amount").eq("user_id", master_id).eq("type", "salary").gte("created_at", since).execute().data
+    total_paid = sum(p["amount"] for p in paid)
+
+    balance = net_earned - total_paid
+    return {
+        "total_earned": total_earned,
+        "total_loss":   total_loss,
+        "net_earned":   net_earned,
+        "total_paid":   total_paid,
+        "balance":      balance,
+        "earnings":     earnings,
+    }
