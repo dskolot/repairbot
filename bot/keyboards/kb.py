@@ -45,7 +45,7 @@ def status_keyboard(order_id: str, current_status: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def order_actions(order_id: str, role: str) -> InlineKeyboardMarkup:
+def order_actions(order_id: str, role: str, status: str = "", master_id: str = "") -> InlineKeyboardMarkup:
     btns = [
         [InlineKeyboardButton(text="🔄 Изменить статус", callback_data=f"change_status:{order_id}")],
         [InlineKeyboardButton(text="🔧 Запчасти",        callback_data=f"parts:{order_id}")],
@@ -54,6 +54,8 @@ def order_actions(order_id: str, role: str) -> InlineKeyboardMarkup:
     if role in ("admin", "owner", "master"):
         btns.append([InlineKeyboardButton(text="👤 Назначить мастера", callback_data=f"assign:{order_id}")])
         btns.append([InlineKeyboardButton(text="✏️ Изменить цену",     callback_data=f"edit_price:{order_id}")])
+    if role in ("admin", "owner") and status in ("done", "issued") and master_id:
+        btns.append([InlineKeyboardButton(text="💼 Начислить мастеру", callback_data=f"earn_order:{order_id}:{master_id}")])
     return InlineKeyboardMarkup(inline_keyboard=btns)
 
 
@@ -88,12 +90,18 @@ def parts_keyboard(parts: list, order_id: str) -> InlineKeyboardMarkup:
     btns = []
     for p in parts:
         status_emoji = {"needed": "🔴", "ordered": "🟡", "arrived": "🟢", "installed": "✅"}.get(p["status"], "")
-        short_part_id = p['id'][:8]
+        short_part_id = p["id"][:8]
         short_order_id = order_id[:8]
-        btns.append([InlineKeyboardButton(
-            text=f"{status_emoji} {p['name']} — {p['cost']} €",
-            callback_data=f"ps:{short_part_id}:{short_order_id}"
-        )])
+        btns.append([
+            InlineKeyboardButton(
+                text=f"{status_emoji} {p['name']} — {p['cost']} €",
+                callback_data=f"ps:{short_part_id}:{short_order_id}"
+            ),
+            InlineKeyboardButton(
+                text="🗑",
+                callback_data=f"del_part:{short_part_id}:{short_order_id}"
+            ),
+        ])
     btns.append([InlineKeyboardButton(text="➕ Добавить запчасть", callback_data=f"add_part:{order_id[:8]}")])
     return InlineKeyboardMarkup(inline_keyboard=btns)
 
@@ -154,8 +162,11 @@ def masters_salary_keyboard(masters: list) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text=f"📋 {m['name']} — детализация", callback_data=f"salary_detail:{m['id']}"),
         ])
         btns.append([
-            InlineKeyboardButton(text=f"⚠️ Убыток {m['name']}", callback_data=f"split_loss:{m['id']}"),
+            InlineKeyboardButton(text=f"➕ Начислить {m['name']}", callback_data=f"earn_manual:{m['id']}"),
             InlineKeyboardButton(text=f"💸 Выплатить {m['name']}", callback_data=f"pay_salary:{m['id']}"),
+        ])
+        btns.append([
+            InlineKeyboardButton(text=f"⚠️ Убыток {m['name']}", callback_data=f"split_loss:{m['id']}"),
         ])
     return InlineKeyboardMarkup(inline_keyboard=btns)
 
