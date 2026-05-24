@@ -370,3 +370,28 @@ async def exp_description_entered(msg: Message, state: FSMContext, db_user: dict
         f"📝 {description}\n"
         f"💸 Сумма: {amount} €"
     )
+
+
+@router.callback_query(F.data.startswith("del_part:"))
+async def delete_part_handler(cb: CallbackQuery, user_role: str):
+    if user_role not in ("admin", "owner"):
+        await cb.answer("❌ Недостаточно прав", show_alert=True)
+        return
+    _, short_part_id, short_order_id = cb.data.split(":")
+    from db.queries import get_part_by_short_id, get_order_by_short_id, delete_part
+    part = get_part_by_short_id(short_part_id)
+    order = get_order_by_short_id(short_order_id)
+    if not part or not order:
+        await cb.answer("Не найдено", show_alert=True)
+        return
+    delete_part(part["id"])
+    # Удаляем расход из кассы по этой запчасти
+    from db.queries import get_sb
+    sb = get_sb()
+    sb.table("cash_log").delete().eq("order_id", order["id"]).eq("description", f"Запчасть: {part['name']}").execute()
+    parts = get_parts_for_order(order["id"])
+    await cb.message.answer(
+        f"✅ Запчасть {part['name']} удалена из заказа и из расходов.",
+        reply_markup=parts_keyboard(parts, order["id"])
+    )
+    await cb.answer()
