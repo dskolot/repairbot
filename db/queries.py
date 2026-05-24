@@ -279,7 +279,7 @@ def create_earning(order_id: str, master_id: str, order_num: str,
                    repair_price: int, parts_cost: int, master_percent: int = 40):
     sb = get_sb()
     profit = repair_price - parts_cost
-    master_amount = max(0, int(repair_price * master_percent / 100))
+    master_amount = max(0, int(profit * master_percent / 100))
     master_loss_amount = abs(min(0, profit))
     data = {
         "order_id":          order_id,
