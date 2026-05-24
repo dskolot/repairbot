@@ -8,12 +8,12 @@ def main_menu(role: str) -> ReplyKeyboardMarkup:
     if role == "master":
         buttons.append([KeyboardButton(text="➕ Новый заказ"), KeyboardButton(text="📊 Все заказы")])
         buttons.append([KeyboardButton(text="💰 Касса"), KeyboardButton(text="📤 Расходы")])
-        buttons.append([KeyboardButton(text="📈 Статистика")])
+        buttons.append([KeyboardButton(text="📈 Статистика"), KeyboardButton(text="💵 Мой заработок")])
 
     if role in ("admin", "owner"):
         buttons.append([KeyboardButton(text="➕ Новый заказ"), KeyboardButton(text="📊 Все заказы")])
         buttons.append([KeyboardButton(text="💰 Касса"), KeyboardButton(text="📤 Расходы")])
-        buttons.append([KeyboardButton(text="📈 Статистика")])
+        buttons.append([KeyboardButton(text="📈 Статистика"), KeyboardButton(text="👨‍🔧 Зарплата мастеров")])
 
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
@@ -143,5 +143,29 @@ def orders_list_keyboard(orders: list) -> InlineKeyboardMarkup:
         btns.append([InlineKeyboardButton(
             text=f"{e} {o['order_num']} | {name} | {model}",
             callback_data=f"open_order:{o['id']}"
+        )])
+    return InlineKeyboardMarkup(inline_keyboard=btns)
+
+
+def masters_salary_keyboard(masters: list) -> InlineKeyboardMarkup:
+    btns = []
+    for m in masters:
+        btns.append([
+            InlineKeyboardButton(text=f"📋 {m['name']} — детализация", callback_data=f"salary_detail:{m['id']}"),
+        ])
+        btns.append([
+            InlineKeyboardButton(text=f"⚠️ Убыток {m['name']}", callback_data=f"split_loss:{m['id']}"),
+            InlineKeyboardButton(text=f"💸 Выплатить {m['name']}", callback_data=f"pay_salary:{m['id']}"),
+        ])
+    return InlineKeyboardMarkup(inline_keyboard=btns)
+
+
+def loss_orders_keyboard(earnings: list) -> InlineKeyboardMarkup:
+    btns = []
+    for e in earnings:
+        loss = abs(e["profit"])
+        btns.append([InlineKeyboardButton(
+            text=f"{e['order_num']} | убыток {loss} €",
+            callback_data=f"loss_order:{e['id']}"
         )])
     return InlineKeyboardMarkup(inline_keyboard=btns)
