@@ -355,3 +355,49 @@ def get_master_salary_summary(master_id: str, days: int = 30):
         "balance":      balance,
         "earnings":     earnings,
     }
+
+
+def delete_part(part_id: str) -> bool:
+    sb = get_sb()
+    # Получаем запчасть для пересчёта стоимости заказа
+    part_res = sb.table("parts").select("*").eq("id", part_id).execute()
+    if not part_res.data:
+        return False
+    part = part_res.data[0]
+    # Удаляем запчасть
+    sb.table("parts").delete().eq("id", part_id).execute()
+    # Пересчитываем parts_cost в заказе
+    remaining = sb.table("parts").select("cost").eq("order_id", part["order_id"]).execute()
+    total = sum(p["cost"] for p in remaining.data)
+    sb.table("orders").update({"parts_cost": total}).eq("id", part["order_id"]).execute()
+    return True
+
+
+def create_manual_earning(order_id: str, master_id: str, order_num: str,
+                          repair_price: int, parts_cost: int, master_amount: int, note: str = ""):
+    sb = get_sb()
+    profit = repair_price - parts_cost
+    existing = sb.table("master_earnings").select("id").eq("order_id", order_id).execute()
+    if existing.data:
+        # Обновляем существующее начисление
+        res = sb.table("master_earnings").update({
+            "master_amount": master_amount,
+            "profit": profit,
+            "note": note,
+        }).eq("order_id", order_id).execute()
+        return res.data[0]
+    # Создаём новое
+    res = sb.table("master_earnings").insert({
+        "order_id":           order_id,
+        "master_id":          master_id,
+        "order_num":          order_num,
+        "repair_price":       repair_price,
+        "parts_cost":         parts_cost,
+        "profit":             profit,
+        "master_percent":     0,
+        "master_amount":      master_amount,
+        "master_loss_percent": 0,
+        "master_loss_amount":  0,
+        "note":               note,
+    }).execute()
+    return res.data[0]
