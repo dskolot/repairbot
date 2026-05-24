@@ -146,9 +146,10 @@ async def set_status(cb: CallbackQuery, db_user: dict, user_role: str):
     order = update_order_status(order_id, new_status, db_user["id"])
     from bot.handlers.salary import maybe_create_earning
     await maybe_create_earning(order_id, new_status)
+    master_id = order.get("master_id") or ""
     await cb.message.answer(
         fmt_order_card(order),
-        reply_markup=order_actions(order_id, user_role)
+        reply_markup=order_actions(order_id, user_role, status=order.get("status",""), master_id=master_id)
     )
     await cb.answer("✅ Статус обновлён")
 
@@ -210,7 +211,8 @@ async def set_price(msg: Message, state: FSMContext):
     user_role = data.get("user_role", "master")
     order = update_order_field(order_id, "price", price)
     await state.clear()
+    master_id = order.get("master_id") or ""
     await msg.answer(
         fmt_order_card(order),
-        reply_markup=order_actions(order_id, user_role)
+        reply_markup=order_actions(order_id, user_role, status=order.get("status",""), master_id=master_id)
     )
