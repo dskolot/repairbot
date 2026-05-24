@@ -144,6 +144,8 @@ async def change_status_menu(cb: CallbackQuery):
 async def set_status(cb: CallbackQuery, db_user: dict, user_role: str):
     _, order_id, new_status = cb.data.split(":")
     order = update_order_status(order_id, new_status, db_user["id"])
+    from bot.handlers.salary import maybe_create_earning
+    await maybe_create_earning(order_id, new_status)
     await cb.message.answer(
         fmt_order_card(order),
         reply_markup=order_actions(order_id, user_role)
