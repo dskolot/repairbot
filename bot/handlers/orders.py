@@ -60,7 +60,9 @@ async def open_order_from_list(cb: CallbackQuery, db_user: dict, user_role: str)
     if not order:
         await cb.answer("Заказ не найден", show_alert=True)
         return
-    await cb.message.answer(fmt_order_card(order), reply_markup=order_actions(order_id, user_role))
+    master_id = order.get("master_id") or ""
+    status = order.get("status", "")
+    await cb.message.answer(fmt_order_card(order), reply_markup=order_actions(order_id, user_role, status=status, master_id=master_id))
     await cb.answer()
 
 
@@ -92,7 +94,8 @@ async def search_order_result(msg: Message, state: FSMContext, db_user: dict, us
     if query.upper().startswith("SC-"):
         order = get_order_by_num(query)
         if order:
-            await msg.answer(fmt_order_card(order), reply_markup=order_actions(order["id"], user_role))
+            master_id = order.get("master_id") or ""
+            await msg.answer(fmt_order_card(order), reply_markup=order_actions(order["id"], user_role, status=order.get("status",""), master_id=master_id))
             return
 
     # Иначе — полнотекстовый поиск
@@ -102,7 +105,8 @@ async def search_order_result(msg: Message, state: FSMContext, db_user: dict, us
         return
     if len(orders) == 1:
         order = get_order_by_id(orders[0]["id"])
-        await msg.answer(fmt_order_card(order), reply_markup=order_actions(order["id"], user_role))
+        master_id = order.get("master_id") or ""
+        await msg.answer(fmt_order_card(order), reply_markup=order_actions(order["id"], user_role, status=order.get("status",""), master_id=master_id))
         return
 
     text = f"Найдено {len(orders)} заказов:\n\n"
@@ -122,7 +126,8 @@ async def order_by_command(msg: Message, db_user: dict, user_role: str):
     if not order:
         await msg.answer("❌ Заказ не найден.")
         return
-    await msg.answer(fmt_order_card(order), reply_markup=order_actions(order["id"], user_role))
+    master_id = order.get("master_id") or ""
+    await msg.answer(fmt_order_card(order), reply_markup=order_actions(order["id"], user_role, status=order.get("status",""), master_id=master_id))
 
 
 # ── СМЕНА СТАТУСА ───────────────────────────────────────────
@@ -177,7 +182,7 @@ async def do_assign_master(cb: CallbackQuery, user_role: str):
     order = assign_master(order_id, master_id)
     await cb.message.answer(
         fmt_order_card(order),
-        reply_markup=order_actions(order_id, user_role)
+        reply_markup=order_actions(order_id, user_role, status=order.get("status",""), master_id=order.get("master_id","") or "")
     )
     await cb.answer("✅ Мастер назначен")
 
