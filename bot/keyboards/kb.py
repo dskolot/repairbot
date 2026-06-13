@@ -55,7 +55,7 @@ def order_actions(order_id: str, role: str, status: str = "", master_id: str = "
         btns.append([InlineKeyboardButton(text="👤 Назначить мастера", callback_data=f"assign:{order_id}")])
         btns.append([InlineKeyboardButton(text="✏️ Изменить цену",     callback_data=f"edit_price:{order_id}")])
     if role in ("admin", "owner") and status in ("done", "issued") and master_id:
-        btns.append([InlineKeyboardButton(text="💼 Начислить мастеру", callback_data=f"earn_order:{order_id}:{master_id}")])
+        btns.append([InlineKeyboardButton(text="💼 Начислить мастеру", callback_data=f"earn_order:{order_id[:8]}:{master_id[:8]}")])
     return InlineKeyboardMarkup(inline_keyboard=btns)
 
 
