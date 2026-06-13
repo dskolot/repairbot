@@ -278,12 +278,14 @@ async def earn_from_order_start(cb: CallbackQuery, state: FSMContext, user_role:
     if user_role not in ("admin", "owner"):
         await cb.answer("❌ Недостаточно прав", show_alert=True)
         return
-    _, order_id, master_id = cb.data.split(":")
-    from db.queries import get_order_by_id
-    order = get_order_by_id(order_id)
+    _, short_order_id, short_master_id = cb.data.split(":")
+    from db.queries import get_order_by_short_id, get_all_masters
+    order = get_order_by_short_id(short_order_id)
     if not order:
         await cb.answer("Заказ не найден", show_alert=True)
         return
+    # Получаем полный master_id из заказа
+    master_id = order.get("master_id") or short_master_id
     price = order.get("price", 0) or 0
     parts = order.get("parts_cost", 0) or 0
     profit = price - parts
