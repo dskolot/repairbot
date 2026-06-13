@@ -41,19 +41,19 @@ def status_keyboard(order_id: str, current_status: str) -> InlineKeyboardMarkup:
     for s, label in STATUSES.items():
         if s == current_status:
             continue
-        buttons.append([InlineKeyboardButton(text=label, callback_data=f"set_status:{order_id}:{s}")])
+        buttons.append([InlineKeyboardButton(text=label, callback_data=f"set_status:{order_id[:8]}:{s}")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def order_actions(order_id: str, role: str, status: str = "", master_id: str = "") -> InlineKeyboardMarkup:
     btns = [
-        [InlineKeyboardButton(text="🔄 Изменить статус", callback_data=f"change_status:{order_id}")],
-        [InlineKeyboardButton(text="🔧 Запчасти",        callback_data=f"parts:{order_id}")],
-        [InlineKeyboardButton(text="💰 Добавить оплату", callback_data=f"pay:{order_id}")],
+        [InlineKeyboardButton(text="🔄 Изменить статус", callback_data=f"change_status:{order_id[:8]}")],
+        [InlineKeyboardButton(text="🔧 Запчасти",        callback_data=f"parts:{order_id[:8]}")],
+        [InlineKeyboardButton(text="💰 Добавить оплату", callback_data=f"pay:{order_id[:8]}")],
     ]
     if role in ("admin", "owner", "master"):
-        btns.append([InlineKeyboardButton(text="👤 Назначить мастера", callback_data=f"assign:{order_id}")])
-        btns.append([InlineKeyboardButton(text="✏️ Изменить цену",     callback_data=f"edit_price:{order_id}")])
+        btns.append([InlineKeyboardButton(text="👤 Назначить мастера", callback_data=f"assign:{order_id[:8]}")])
+        btns.append([InlineKeyboardButton(text="✏️ Изменить цену",     callback_data=f"edit_price:{order_id[:8]}")])
     if role in ("admin", "owner") and status in ("done", "issued") and master_id:
         btns.append([InlineKeyboardButton(text="💼 Начислить мастеру", callback_data=f"earn_order:{order_id[:8]}:{master_id[:8]}")])
     return InlineKeyboardMarkup(inline_keyboard=btns)
@@ -116,7 +116,7 @@ def part_status_keyboard(part_id: str, order_id: str) -> InlineKeyboardMarkup:
     short_order_id = order_id[:8]
     btns = [[InlineKeyboardButton(text=label, callback_data=f"sp:{short_part_id}:{s}:{short_order_id}")]
             for s, label in statuses]
-    btns.append([InlineKeyboardButton(text="◀️ Назад", callback_data=f"parts:{order_id}")])
+    btns.append([InlineKeyboardButton(text="◀️ Назад", callback_data=f"parts:{order_id[:8]}")])
     return InlineKeyboardMarkup(inline_keyboard=btns)
 
 
