@@ -72,6 +72,27 @@ def get_active_orders(master_id: str = None):
     return res.data
 
 
+def get_all_orders(master_id: str = None) -> list:
+    """Все заказы во всех статусах"""
+    sb = get_sb()
+    q = sb.table("orders").select("*, clients(name, phone), users!orders_master_id_fkey(name)")
+    if master_id:
+        q = q.eq("master_id", master_id)
+    res = q.order("created_at", desc=True).execute()
+    return res.data
+
+
+def get_orders_by_status_summary() -> dict:
+    """Сводка: сколько заказов в каждом статусе"""
+    sb = get_sb()
+    res = sb.table("orders").select("status").execute()
+    summary = {}
+    for o in res.data:
+        s = o["status"]
+        summary[s] = summary.get(s, 0) + 1
+    return summary
+
+
 def update_order_status(order_id: str, new_status: str, changed_by: str, comment: str = ""):
     sb = get_sb()
     order = get_order_by_id(order_id)
@@ -226,21 +247,22 @@ def get_cash_log_with_orders(days: int = 30):
 
 
 def search_orders(query: str) -> list:
-    """Поиск заказов по имени клиента, телефону, модели устройства или запчасти"""
+    """Поиск заказов по всем статусам — имя, телефон, модель, запчасть"""
     sb = get_sb()
     q = query.strip().lower()
     results = []
     seen_ids = set()
+    sel = "*, clients(name, phone), users!orders_master_id_fkey(name)"
 
     # По модели устройства
-    r1 = sb.table("orders").select("*, clients(name, phone), users!orders_master_id_fkey(name)").ilike("device_model", f"%{q}%").execute()
+    r1 = sb.table("orders").select(sel).ilike("device_model", f"%{q}%").execute()
     for o in r1.data:
         if o["id"] not in seen_ids:
             results.append(o)
             seen_ids.add(o["id"])
 
     # По неисправности
-    r2 = sb.table("orders").select("*, clients(name, phone), users!orders_master_id_fkey(name)").ilike("malfunction", f"%{q}%").execute()
+    r2 = sb.table("orders").select(sel).ilike("malfunction", f"%{q}%").execute()
     for o in r2.data:
         if o["id"] not in seen_ids:
             results.append(o)
@@ -254,7 +276,7 @@ def search_orders(query: str) -> list:
         clients2 = sb.table("clients").select("id").ilike("phone", f"%{q}%").execute()
         client_ids = [c["id"] for c in clients2.data]
     if client_ids:
-        r3 = sb.table("orders").select("*, clients(name, phone), users!orders_master_id_fkey(name)").in_("client_id", client_ids).execute()
+        r3 = sb.table("orders").select(sel).in_("client_id", client_ids).execute()
         for o in r3.data:
             if o["id"] not in seen_ids:
                 results.append(o)
@@ -264,7 +286,7 @@ def search_orders(query: str) -> list:
     parts = sb.table("parts").select("order_id").ilike("name", f"%{q}%").execute()
     part_order_ids = list(set(p["order_id"] for p in parts.data))
     if part_order_ids:
-        r4 = sb.table("orders").select("*, clients(name, phone), users!orders_master_id_fkey(name)").in_("id", part_order_ids).execute()
+        r4 = sb.table("orders").select(sel).in_("id", part_order_ids).execute()
         for o in r4.data:
             if o["id"] not in seen_ids:
                 results.append(o)
