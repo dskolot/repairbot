@@ -82,7 +82,10 @@ async def show_cash_expense(cb: CallbackQuery):
 
 @router.callback_query(F.data.startswith("pay:"))
 async def pay_menu(cb: CallbackQuery, user_role: str):
-    order_id = cb.data.split(":")[1]
+    from db.queries import get_order_by_short_id
+    short_id = cb.data.split(":")[1]
+    full_order = get_order_by_short_id(short_id)
+    order_id = full_order["id"] if full_order else short_id
     await cb.message.answer(
         "💰 Выберите тип платежа:",
         reply_markup=cash_type_keyboard(order_id)
@@ -144,7 +147,10 @@ async def cash_amount_entered(msg: Message, state: FSMContext, db_user: dict, us
 
 @router.callback_query(F.data.startswith("parts:"))
 async def show_parts(cb: CallbackQuery):
-    order_id = cb.data.split(":")[1]
+    from db.queries import get_order_by_short_id
+    short_id = cb.data.split(":")[1]
+    full_order = get_order_by_short_id(short_id)
+    order_id = full_order["id"] if full_order else short_id
     parts = get_parts_for_order(order_id)
     kb = parts_keyboard(parts, order_id)
     if parts:

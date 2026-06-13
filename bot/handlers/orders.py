@@ -154,8 +154,13 @@ async def order_by_command(msg: Message, db_user: dict, user_role: str):
 
 @router.callback_query(F.data.startswith("change_status:"))
 async def change_status_menu(cb: CallbackQuery):
-    order_id = cb.data.split(":")[1]
-    order = get_order_by_id(order_id)
+    from db.queries import get_order_by_short_id
+    short_id = cb.data.split(":")[1]
+    order = get_order_by_short_id(short_id)
+    if not order:
+        await cb.answer("Заказ не найден", show_alert=True)
+        return
+    order_id = order["id"]
     if not order:
         await cb.answer("Заказ не найден", show_alert=True)
         return
@@ -168,7 +173,13 @@ async def change_status_menu(cb: CallbackQuery):
 
 @router.callback_query(F.data.startswith("set_status:"))
 async def set_status(cb: CallbackQuery, db_user: dict, user_role: str):
-    _, order_id, new_status = cb.data.split(":")
+    from db.queries import get_order_by_short_id
+    _, short_id, new_status = cb.data.split(":")
+    full_order = get_order_by_short_id(short_id)
+    if not full_order:
+        await cb.answer("Заказ не найден", show_alert=True)
+        return
+    order_id = full_order["id"]
     order = update_order_status(order_id, new_status, db_user["id"])
     status_label = STATUSES.get(new_status, new_status)
 
@@ -191,7 +202,10 @@ async def set_status(cb: CallbackQuery, db_user: dict, user_role: str):
 
 @router.callback_query(F.data.startswith("assign:"))
 async def assign_master_menu(cb: CallbackQuery, user_role: str):
-    order_id = cb.data.split(":")[1]
+    from db.queries import get_order_by_short_id
+    short_id = cb.data.split(":")[1]
+    full_order = get_order_by_short_id(short_id)
+    order_id = full_order["id"] if full_order else short_id
     masters = get_all_masters()
     await cb.message.answer(
         "👨‍🔧 Выберите мастера:",
@@ -218,7 +232,10 @@ class EditPrice(StatesGroup):
 
 @router.callback_query(F.data.startswith("edit_price:"))
 async def edit_price_prompt(cb: CallbackQuery, state: FSMContext, user_role: str):
-    order_id = cb.data.split(":")[1]
+    from db.queries import get_order_by_short_id
+    short_id = cb.data.split(":")[1]
+    full_order = get_order_by_short_id(short_id)
+    order_id = full_order["id"] if full_order else short_id
     await state.update_data(order_id=order_id, user_role=user_role)
     await cb.message.answer("✏️ Введите новую стоимость ремонта в евро:")
     await state.set_state(EditPrice.waiting_price)
