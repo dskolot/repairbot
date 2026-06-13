@@ -60,15 +60,14 @@ async def all_orders(msg: Message, user_role: str):
         if count > 0:
             e = status_emoji.get(status, "•")
             summary_lines.append(f"{e} {label}: {count}")
-    summary_lines.append("")
+    summary_lines.append("\nНажмите на заказ для открытия:")
 
-    # Только активные в кликабельном списке
-    orders = get_active_orders()
-    if orders:
-        summary_lines.append("Активные (нажмите для открытия):")
-        for o in orders:
-            client = o.get("clients") or {}
-            summary_lines.append(f"• {o['order_num']} — {client.get('name','?')} | {o.get('device_model','')}")
+    # Все заказы включая выданные
+    orders = get_all_orders()
+    for o in orders:
+        client = o.get("clients") or {}
+        e = status_emoji.get(o.get("status",""), "•")
+        summary_lines.append(f"{e} {o['order_num']} — {client.get('name','?')} | {o.get('device_model','')}")
 
     await msg.answer("\n".join(summary_lines), reply_markup=orders_list_keyboard(orders) if orders else None)
 
