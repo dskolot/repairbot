@@ -286,6 +286,7 @@ async def earn_from_order_start(cb: CallbackQuery, state: FSMContext, user_role:
         return
     # Получаем полный master_id из заказа
     master_id = order.get("master_id") or short_master_id
+    order_id = order["id"]
     price = order.get("price", 0) or 0
     parts = order.get("parts_cost", 0) or 0
     profit = price - parts
